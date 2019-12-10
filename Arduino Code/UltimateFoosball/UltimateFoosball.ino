@@ -18,6 +18,8 @@
 #include <SPI.h>
 #include <Adafruit_VS1053.h>
 #include <SD.h>
+#include <Adafruit_GFX.h>
+#include "Adafruit_LEDBackpack.h"
 
 //
 // Define our global params for the program
@@ -54,6 +56,7 @@
 CRGB homeTeamLeds[NUM_LEDS_HOME_TEAM];
 CRGB vistorTeamLeds[NUM_LED_VISITOR_TEAM];
 Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(VS1053_RESET, VS1053_CS, VS1053_DCS, VS1053_DREQ, CARDCS);
+Adafruit_7segment scoreDisplay = Adafruit_7segment();
 
 //
 // Init global variables
@@ -67,7 +70,7 @@ enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, C
 // EVENTS to be coded for
 //
 // 1. Home or Visitor Goal
-// 2. Multiple goals within x seconds, ON FIRE team
+// 2. Multiple goals within x seconds for a single team, ON FIRE team
 // 3. No goals within x seconds, the crowd is growing restless
 // 4. Random smack talk or random anncounement if no goal in x seconds?
 // 5. Start-up/game start anncoucement
@@ -77,6 +80,9 @@ enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, C
 void setup() {
   // init serial output
   Serial.begin(9600);
+
+  // set up the scoreboard display (7 segment led)
+  scoreDisplay.begin(0x70);
 
   if (! musicPlayer.begin()) { // initialise the music player
     debugln(F("Couldn't find VS1053, do you have the right pins defined?"));
@@ -130,6 +136,8 @@ void setup() {
 
 void loop() {
 
+  // TODO: Figure out how to make the LEDs do something cool while we wait for an event/interrupt
+
 
 }
 
@@ -137,7 +145,7 @@ void loop() {
 void homeScoreTriggered() {
   // this is the ISR function for when the home team beam break is triggered
   debugln("Home score interrupt was triggered...");
-  
+
   // capture time this score event happened
   unsigned int thisScoreTime = millis();
 
@@ -148,20 +156,22 @@ void homeScoreTriggered() {
   // which means that the team scored more than once in HOT_TEAM_MILLISECS  seconds
   if ( (lastTeamScored == 'H') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
     debugln("Home team is HOT");
-    
+
     // TODO: play hot home team audio and special LED effects for home team
   }
   lastTeamScored = 'H';
   lastScoreTime = thisScoreTime;
 
-  // TODO: Update score display
+  // update the scoreboard (HOME | VISITOR)
+  updateScoreBoard();
+  
   // TODO: Play home team score LED effect
 }
 
 void visitorScoreTriggered() {
   // this is the ISR function for when the visitor team beam break is triggered
   debugln("Visitor score interrupt was triggered...");
-  
+
   // capture time this score event happened
   unsigned int thisScoreTime = millis();
 
@@ -170,21 +180,23 @@ void visitorScoreTriggered() {
 
   if ( (lastTeamScored == 'V') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
     debugln("Visiting team is HOT");
-    
+
     // TODO: play hot visitor team audio and special LED effects for visitor team
   }
 
   lastTeamScored = 'V';
   lastScoreTime = thisScoreTime;
 
-  // TODO: Update score display
+  // update the scoreboard (HOME | VISITOR)
+  updateScoreBoard();
+  
   // TODO: Play visitor team score LED effect
 }
 
 void gameResetTriggered() {
   // this is the ISR function for the game reset button
   debugln("gameReset interrupt was triggered...");
-  
+
   lastTeamScored = 'U';
   lastScoreTime = 0;
   visitorTeamScore = 0;
@@ -206,11 +218,11 @@ void playAudioTrack(TrackType trackType) {
   // first three tracks are for first event, next three are for second event, etc...
   // random set min as inclusive but max is exclusive, thus the strange 0-3, 3-6, etc.
   debugln("playAudioTrack method was called with enum value: " + trackType);
-  
+
   int tmpAngRead = analogRead(A0);
   randomSeed(tmpAngRead);
   debugln("Got an A0 read value of: " + tmpAngRead);
-  
+
   switch (trackType) {
 
     case HomeTeamScore:
@@ -265,4 +277,13 @@ void playRandomFileIn( File dir ) {
   debug("Selected random track to play: ");
   debugln(result.name());
   musicPlayer.startPlayingFile(result.name());
+}
+
+void updateScoreBoard(){
+  scoreDisplay.writeDigitNum(0, (homeTeamScore / 10) % 10, false);
+  scoreDisplay.writeDigitNum(1, (homeTeamScore % 10), false);
+  scoreDisplay.drawColon(false);
+  scoreDisplay.writeDigitNum(3, (visitorTeamScore / 10) % 10, false);
+  scoreDisplay.writeDigitNum(4, visitorTeamScore % 10, false);
+  scoreDisplay.writeDisplay();
 }
