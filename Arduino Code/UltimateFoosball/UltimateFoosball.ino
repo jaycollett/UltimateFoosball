@@ -39,7 +39,9 @@
 #define   VS1053_CS               6     // VS1053 chip select pin (output)
 #define   VS1053_DREQ             9     // VS1053 Data request, ideally an Interrupt pin
 #define   VS1053_DCS              10    // VS1053 Data/command select pin (output)
+#define   BORED_CROWD_MILLIS      45000
 #define   DEBUG
+
 
 // Setup our debug printing
 #ifdef DEBUG
@@ -66,6 +68,7 @@ unsigned int visitorTeamScore;
 char lastTeamScored;
 unsigned int lastScoreTime;
 enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, CrowdIsBored, SystemStart, SystemReset };
+unsigned int tempAnalogReadForRandom;
 
 // EVENTS to be coded for
 //
@@ -131,6 +134,7 @@ void setup() {
   lastTeamScored = 'U';
   lastScoreTime = 0;
 
+  playAudioTrack(SystemStart);
 }
 
 
@@ -138,7 +142,14 @@ void loop() {
 
   // TODO: Figure out how to make the LEDs do something cool while we wait for an event/interrupt
 
-
+ // Play some random fans in stadium type sounds since it's been a while since a score was made...
+ if((millis() - lastScoreTime) >= BORED_CROWD_MILLIS){
+  playAudioTrack(CrowdIsBored);
+ }
+ 
+ // update the random seed
+  tempAnalogReadForRandom = analogRead(A0);
+  randomSeed(tempAnalogReadForRandom);
 }
 
 
@@ -155,17 +166,18 @@ void homeScoreTriggered() {
   // check to see if this event qualifies for a HOT team score
   // which means that the team scored more than once in HOT_TEAM_MILLISECS  seconds
   if ( (lastTeamScored == 'H') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
-    debugln("Home team is HOT");
-
-    // TODO: play hot home team audio and special LED effects for home team
+    debugln("Home team is HOT, playing audio for hot home team...");
+    playAudioTrack(HomeTeamScore);
+  }else{
+     // play regular score sounds
+     debugln("Playing home team score sound..");
+     playAudioTrack(HomeTeamScore);
   }
   lastTeamScored = 'H';
   lastScoreTime = thisScoreTime;
 
   // update the scoreboard (HOME | VISITOR)
   updateScoreBoard();
-  
-  // TODO: Play home team score LED effect
 }
 
 void visitorScoreTriggered() {
@@ -179,9 +191,11 @@ void visitorScoreTriggered() {
   visitorTeamScore++;
 
   if ( (lastTeamScored == 'V') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
-    debugln("Visiting team is HOT");
-
-    // TODO: play hot visitor team audio and special LED effects for visitor team
+    debugln("Visiting team is HOT, playing sounds for hot visiting team");
+    playAudioTrack(VisitorTeamHOT);
+  }else{
+    debugln("Playing visiting team score sound...");
+    playAudioTrack(VisitorTeamScore);
   }
 
   lastTeamScored = 'V';
@@ -189,8 +203,6 @@ void visitorScoreTriggered() {
 
   // update the scoreboard (HOME | VISITOR)
   updateScoreBoard();
-  
-  // TODO: Play visitor team score LED effect
 }
 
 void gameResetTriggered() {
@@ -202,8 +214,8 @@ void gameResetTriggered() {
   visitorTeamScore = 0;
   homeTeamScore = 0;
 
-  // TODO: Update display for score and play reset audio
-  // TODO: Play funky "RESET" LED light show
+  debugln("Playing system reset sound...");
+  playAudioTrack(SystemReset);
 }
 
 
@@ -218,10 +230,6 @@ void playAudioTrack(TrackType trackType) {
   // first three tracks are for first event, next three are for second event, etc...
   // random set min as inclusive but max is exclusive, thus the strange 0-3, 3-6, etc.
   debugln("playAudioTrack method was called with enum value: " + trackType);
-
-  int tmpAngRead = analogRead(A0);
-  randomSeed(tmpAngRead);
-  debugln("Got an A0 read value of: " + tmpAngRead);
 
   switch (trackType) {
 
