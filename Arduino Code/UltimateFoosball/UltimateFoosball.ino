@@ -31,7 +31,7 @@
 #define   LED_BRIGHTNESS          128
 #define   HOME_SCORE_PIN          15
 #define   VISITOR_SCORE_PIN       19
-#define   HOT_TEAM_MILLISECS      10000
+#define   HOT_TEAM_MILLISECS      10000 // if a team scores again within 10 seconds, play a hot team sound clip
 #define   GAME_RESET_BUTTON       13
 #define   VS1053_RESET            -1    // VS1053 reset pin (not used!)
 #define   WINC_EN                 2     // enable pin for WINC1500
@@ -39,7 +39,7 @@
 #define   VS1053_CS               6     // VS1053 chip select pin (output)
 #define   VS1053_DREQ             9     // VS1053 Data request, ideally an Interrupt pin
 #define   VS1053_DCS              10    // VS1053 Data/command select pin (output)
-#define   BORED_CROWD_MILLIS      45000
+#define   BORED_CROWD_MILLIS      45000 // 45 seconds must lapse before we play a bored crowd sound clip
 #define   DEBUG
 
 
