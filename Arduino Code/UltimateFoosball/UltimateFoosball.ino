@@ -282,9 +282,12 @@ void playRandomFileIn( File dir ) {
     }
     count++;
   }
+  char charBuf[50];
+  String tempValue = String(dir.name()) + "/" + String(result.name());
   debug("Selected random track to play: ");
-  debugln(result.name());
-  musicPlayer.startPlayingFile(result.name());
+  debugln(tempValue);
+  tempValue.toCharArray(charBuf, 50);
+  musicPlayer.startPlayingFile(charBuf);
 }
 
 void updateScoreBoard(){
