@@ -69,6 +69,7 @@ char lastTeamScored;
 unsigned int lastScoreTime;
 enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, CrowdIsBored, SystemStart, SystemReset };
 unsigned int tempAnalogReadForRandom;
+unsigned int lastTimeBoredCrowdWasPlayed;
 
 // EVENTS to be coded for
 //
@@ -77,7 +78,6 @@ unsigned int tempAnalogReadForRandom;
 // 3. No goals within x seconds, the crowd is growing restless
 // 4. Random smack talk or random anncounement if no goal in x seconds?
 // 5. Start-up/game start anncoucement
-// 6. ball in play annoucement (if beam breaks on ball entry)
 //
 
 void setup() {
@@ -105,7 +105,7 @@ void setup() {
   debugln("SD OK!");
 
   // Set volume for left, right channels. lower numbers == louder volume!
-  musicPlayer.setVolume(12, 12);
+  musicPlayer.setVolume(5, 5);
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);  // DREQ int
 
   // build the object of LEDs for the home team array
@@ -142,17 +142,19 @@ void setup() {
 
 void loop() {
 
-  // TODO: Figure out how to make the LEDs do something cool while we wait for an event/interrupt
-
- // Play some random fans in stadium type sounds since it's been a while since a score was made...
- if((millis() - lastScoreTime) >= BORED_CROWD_MILLIS){
+ // play some random fans in stadium type sounds since it's been a while since a score was made...
+ // we only want to play this audio if it's been at lesat BORED_CROWD_MILLIS since the last time 
+ // we played the audio and BORED_CROWD_MILLIS since the last score
+ if( ((millis() - lastScoreTime) >= BORED_CROWD_MILLIS) && ((millis() - lastTimeBoredCrowdWasPlayed) >= BORED_CROWD_MILLIS) ){
   playAudioTrack(CrowdIsBored);
-  lastScoreTime = millis();
+  lastTimeBoredCrowdWasPlayed = millis();
  }
  
  // update the random seed
-  tempAnalogReadForRandom = analogRead(A0);
-  randomSeed(tempAnalogReadForRandom);
+ tempAnalogReadForRandom = analogRead(A0);
+ randomSeed(tempAnalogReadForRandom);
+
+ 
 }
 
 
@@ -181,6 +183,9 @@ void homeScoreTriggered() {
 
   // update the scoreboard (HOME | VISITOR)
   updateScoreBoard();
+
+  // play a quick light show for the home team score
+  homeTeamScoredLights();
 }
 
 void visitorScoreTriggered() {
@@ -206,6 +211,9 @@ void visitorScoreTriggered() {
 
   // update the scoreboard (HOME | VISITOR)
   updateScoreBoard();
+
+  // play a quick light show for the visiting team score
+  visitingTeamScoredLights();
 }
 
 void gameResetTriggered() {
@@ -220,6 +228,7 @@ void gameResetTriggered() {
   debugln("Playing system reset sound...");
   playAudioTrack(SystemReset);
 
+  // update the scoreboard (HOME | VISITOR)
   updateScoreBoard();
 }
 
@@ -296,6 +305,8 @@ void playRandomFileIn( File dir ) {
 }
 
 void updateScoreBoard(){
+  // this method takes care of writing out the two scores to the 4-digit
+  // seven segment display
   scoreDisplay.writeDigitNum(0, (homeTeamScore / 10) % 10, false);
   scoreDisplay.writeDigitNum(1, (homeTeamScore % 10), false);
   scoreDisplay.drawColon(false);
@@ -303,3 +314,115 @@ void updateScoreBoard(){
   scoreDisplay.writeDigitNum(4, visitorTeamScore % 10, false);
   scoreDisplay.writeDisplay();
 }
+
+
+void homeTeamScoredLights(){
+  // simple celebration LED show
+  // set the odd leds to off on the home team and even off on the visiting team
+  // then set the even leds to red on the home team and the odd leds red on the visiting team
+  // then repeat a few times
+  int t = 0;
+  while(t < 5){
+    for(int i = 0; i < NUM_LEDS_HOME_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        homeTeamLeds[i] = CRGB::Red;
+      }else{
+        homeTeamLeds[i] = CRGB::Black;
+      }
+    }
+  
+    for(int i = 0; i < NUM_LED_VISITOR_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        vistorTeamLeds[i] = CRGB::Black;
+      }else{
+        vistorTeamLeds[i] = CRGB::Red;
+      }
+    }
+  
+    FastLED.show();
+    delay(200);
+  
+    for(int i = 0; i < NUM_LEDS_HOME_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        homeTeamLeds[i] = CRGB::Black;
+      }else{
+        homeTeamLeds[i] = CRGB::Red;
+      }
+    }
+  
+    for(int i = 0; i < NUM_LED_VISITOR_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        vistorTeamLeds[i] = CRGB::Red;
+      }else{
+        vistorTeamLeds[i] = CRGB::Black;
+      }
+    }
+
+    FastLED.show();
+    delay(200);
+
+    t++;
+
+  }
+}
+
+void visitingTeamScoredLights(){
+  // simple celebration LED show
+  // set the odd leds to off on the visiting team and even off on the home team
+  // then set the even leds to white on the visiting team and the odd leds white on the visiting team
+  // then repeat a few times
+  int t = 0;
+  while(t < 5){
+    for(int i = 0; i < NUM_LEDS_HOME_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        homeTeamLeds[i] = CRGB::White;
+      }else{
+        homeTeamLeds[i] = CRGB::Black;
+      }
+    }
+  
+    for(int i = 0; i < NUM_LED_VISITOR_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        vistorTeamLeds[i] = CRGB::Black;
+      }else{
+        vistorTeamLeds[i] = CRGB::White;
+      }
+    }
+  
+    FastLED.show();
+    delay(200);
+  
+    for(int i = 0; i < NUM_LEDS_HOME_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        homeTeamLeds[i] = CRGB::Black;
+      }else{
+        homeTeamLeds[i] = CRGB::White;
+      }
+    }
+  
+    for(int i = 0; i < NUM_LED_VISITOR_TEAM; i++){
+      if( (i % 2) == 0)
+      { 
+        vistorTeamLeds[i] = CRGB::White;
+      }else{
+        vistorTeamLeds[i] = CRGB::Black;
+      }
+    }
+
+    FastLED.show();
+    delay(200);
+
+    t++;
+
+  }
+}
+
+
+
