@@ -135,6 +135,8 @@ void setup() {
   lastScoreTime = 0;
 
   playAudioTrack(SystemStart);
+
+  updateScoreBoard();
 }
 
 
@@ -145,6 +147,7 @@ void loop() {
  // Play some random fans in stadium type sounds since it's been a while since a score was made...
  if((millis() - lastScoreTime) >= BORED_CROWD_MILLIS){
   playAudioTrack(CrowdIsBored);
+  lastScoreTime = millis();
  }
  
  // update the random seed
@@ -216,6 +219,8 @@ void gameResetTriggered() {
 
   debugln("Playing system reset sound...");
   playAudioTrack(SystemReset);
+
+  updateScoreBoard();
 }
 
 
