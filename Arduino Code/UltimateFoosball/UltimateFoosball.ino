@@ -396,7 +396,7 @@ void visitingTeamScoredLights(){
     }
   
     FastLED.show();
-    delay(200);
+    delay(200); 
   
     for(int i = 0; i < NUM_LEDS_HOME_TEAM; i++){
       if( (i % 2) == 0)
