@@ -41,6 +41,7 @@
 #define   VS1053_DCS              10    // VS1053 Data/command select pin (output)
 #define   BORED_CROWD_MILLIS      45000 // 45 seconds must lapse before we play a bored crowd sound clip
 #define   ISR_WAIT_TIME           1000  // time in ms that must elapse before processing any interrtupt again
+#define   TWK_LED_DELAY           200   // time between calls to the twinkle led function in the loop event
 #define   DEBUG
 
 
@@ -76,6 +77,7 @@ volatile bool visitingTeamHot = false;
 volatile bool gameResetRequested = false;
 volatile bool processAGoal = false;
 volatile unsigned int lastRSTTriggerTime = 0;
+unsigned int lastTwinkleLEDUpdate = 0;
 
 // EVENTS to be coded for
 //
@@ -156,7 +158,7 @@ void loop() {
   if ( ((millis() - lastScoreTime) >= BORED_CROWD_MILLIS) && ((millis() - lastTimeBoredCrowdWasPlayed) >= BORED_CROWD_MILLIS) ) {
     playAudioTrack(CrowdIsBored);
     lastTimeBoredCrowdWasPlayed = millis();
-    ColorTwinkleLEDs();
+    clearAllPixels();
   }
 
   // check to see if we need to process a new goal/score
@@ -194,6 +196,10 @@ void loop() {
   tempAnalogReadForRandom = analogRead(A0);
   randomSeed(tempAnalogReadForRandom);
 
+  if(( millis() - lastTwinkleLEDUpdate) >= TWK_LED_DELAY){
+    ColorTwinkleLEDs();
+    lastTwinkleLEDUpdate = millis();
+  }
 }
 
 
@@ -470,11 +476,12 @@ void visitingTeamScoredLights() {
 }
 
 void ColorTwinkleLEDs() {
-  for (int i = 0; i < 30; i++) {
     homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
     vistorTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
-    
+
+    if(random(35) > 25){
+      homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB::Black;
+      vistorTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
+    }
     FastLED.show();
-    delay(200);
-  }
 }
