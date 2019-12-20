@@ -21,18 +21,20 @@
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
 
+// ***********************************************************************************************************************************************
 //
 // Define our global params for the program
 //
-#define   NUM_LEDS_HOME_TEAM      62
-#define   NUM_LED_VISITING_TEAM    62
-#define   VISITOR_LED_DATA_PIN    11
-#define   HOME_TEAM_LED_DATA_PIN  12
-#define   LED_BRIGHTNESS          128
-#define   HOME_SCORE_PIN          15
-#define   VISITOR_SCORE_PIN       19
+// ***********************************************************************************************************************************************
+#define   NUM_LEDS_HOME_TEAM      62    // number of LEDs in the home team LED strip
+#define   NUM_LED_VISITING_TEAM   62    // number of LEDs in the visiting team LED strip
+#define   VISITING_LED_DATA_PIN   11    // pin used to talk with the neopixel LED strip for the visiting team LED strip
+#define   HOME_TEAM_LED_DATA_PIN  12    // pin used to talk with the neopixel LED strip for the home team LED strip
+#define   LED_BRIGHTNESS          128   // set the brightness of the neopixel LEDs (0-255) 0 = off, 255 = full on ouch bright
+#define   HOME_SCORE_PIN          15    // pin used for the home team beam break (to detect a goal/score)
+#define   VISITING_SCORE_PIN      19    // pin used for the visiting team beam break (to detect a goal/score)
 #define   HOT_TEAM_MILLISECS      10000 // if a team scores again within 10 seconds, play a hot team sound clip
-#define   GAME_RESET_BUTTON       13
+#define   GAME_RESET_BUTTON       13    // pin used to control resetting the current game (not the MCU)
 #define   VS1053_RESET            -1    // VS1053 reset pin (not used!)
 #define   WINC_EN                 2     // enable pin for WINC1500
 #define   CARDCS                  5     // Card chip select pin
@@ -54,17 +56,21 @@
 #define debugln(x)
 #endif
 
+// ***********************************************************************************************************************************************
 //
 // Init objects
 //
+// ***********************************************************************************************************************************************
 CRGB homeTeamLeds[NUM_LEDS_HOME_TEAM];
-CRGB vistorTeamLeds[NUM_LED_VISITING_TEAM];
+CRGB visitingTeamLeds[NUM_LED_VISITING_TEAM];
 Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(VS1053_RESET, VS1053_CS, VS1053_DCS, VS1053_DREQ, CARDCS);
 Adafruit_7segment scoreDisplay = Adafruit_7segment();
 
+// ***********************************************************************************************************************************************
 //
-// Init global variables
+// Init global variables (volatile is needed as we set some of these in the ISR functions)
 //
+// ***********************************************************************************************************************************************
 volatile unsigned int homeTeamScore;
 volatile unsigned int visitingTeamScore;
 volatile char lastTeamScored;
@@ -88,6 +94,11 @@ unsigned int lastTwinkleLEDUpdate = 0;
 // 5. Start-up/game start anncoucement
 //
 
+// ***********************************************************************************************************************************************
+//
+// Main Setup Method Call
+//
+// ***********************************************************************************************************************************************
 void setup() {
   // init serial output
   Serial.begin(9600);
@@ -121,14 +132,14 @@ void setup() {
 
 
   // build the object of LEDs for the visiotr team array
-  FastLED.addLeds<NEOPIXEL, VISITOR_LED_DATA_PIN>(vistorTeamLeds, NUM_LED_VISITING_TEAM).setCorrection(TypicalLEDStrip);;
+  FastLED.addLeds<NEOPIXEL, VISITING_LED_DATA_PIN>(visitingTeamLeds, NUM_LED_VISITING_TEAM).setCorrection(TypicalLEDStrip);;
 
   // set master brightness control
   FastLED.setBrightness(LED_BRIGHTNESS);
 
   // now we need to attach interrupts for the scoring beam break pins
   attachInterrupt (digitalPinToInterrupt (HOME_SCORE_PIN), homeScoreTriggered, LOW);
-  attachInterrupt (digitalPinToInterrupt (VISITOR_SCORE_PIN), visitorScoreTriggered, LOW);
+  attachInterrupt (digitalPinToInterrupt (VISITING_SCORE_PIN), visitorScoreTriggered, LOW);
 
   // attach an interrupt for the reset button
   attachInterrupt (digitalPinToInterrupt (GAME_RESET_BUTTON), gameResetTriggered, LOW);
@@ -149,7 +160,11 @@ void setup() {
   updateScoreBoard();
 }
 
-
+// ***********************************************************************************************************************************************
+//
+// Primary loop for this firmware
+//
+// ***********************************************************************************************************************************************
 void loop() {
 
   // play some random fans in stadium type sounds since it's been a while since a score was made...
@@ -202,7 +217,11 @@ void loop() {
   }
 }
 
-
+// ***********************************************************************************************************************************************
+//
+// Home Team Score Function
+//
+// ***********************************************************************************************************************************************
 void homeScoreTriggered() {
   // this is the ISR function for when the home team beam break is triggered
   // here we'll set all the proper variables for the main loop to process
@@ -231,6 +250,11 @@ void homeScoreTriggered() {
   }
 }
 
+// ***********************************************************************************************************************************************
+//
+// Visiting Team Score Function
+//
+// ***********************************************************************************************************************************************
 void visitorScoreTriggered() {
   // this is the ISR function for when the visitor team beam break is triggered
 
@@ -253,6 +277,11 @@ void visitorScoreTriggered() {
   }
 }
 
+// ***********************************************************************************************************************************************
+//
+// Game Reset Function
+//
+// ***********************************************************************************************************************************************
 void gameResetTriggered() {
 
   if ( (millis() - lastRSTTriggerTime) > ISR_WAIT_TIME) {
@@ -269,7 +298,11 @@ void gameResetTriggered() {
   }
 }
 
-
+// ***********************************************************************************************************************************************
+//
+// Play an audio track function
+//
+// ***********************************************************************************************************************************************
 void playAudioTrack(TrackType trackType) {
 
   // this method takes a string which identifies which audio track on the SD card should be played
@@ -316,6 +349,11 @@ void playAudioTrack(TrackType trackType) {
 
 }
 
+// ***********************************************************************************************************************************************
+//
+// Random file selection function (supporting function)
+//
+// ***********************************************************************************************************************************************
 void playRandomFileIn( File dir ) {
   File entry, result;
   int count = 1;
@@ -335,12 +373,15 @@ void playRandomFileIn( File dir ) {
   }
   char charBuf[50];
   String tempValue = String(dir.name()) + "/" + String(result.name());
-  debug("Selected random track to play: ");
-  debugln(tempValue);
   tempValue.toCharArray(charBuf, 50);
   musicPlayer.startPlayingFile(charBuf);
 }
 
+// ***********************************************************************************************************************************************
+//
+// Update scoreboard scores function
+//
+// ***********************************************************************************************************************************************
 void updateScoreBoard() {
   // this method takes care of writing out the two scores to the 4-digit
   // seven segment display
@@ -352,7 +393,11 @@ void updateScoreBoard() {
   scoreDisplay.writeDisplay();
 }
 
-
+// ***********************************************************************************************************************************************
+//
+// Home Team (red players) Score LED lightshow function
+//
+// ***********************************************************************************************************************************************
 void homeTeamScoredLights() {
   // simple celebration LED show
   // set the odd leds to off on the home team and even off on the visiting team
@@ -372,9 +417,9 @@ void homeTeamScoredLights() {
     for (int i = 0; i < NUM_LED_VISITING_TEAM; i++) {
       if ( (i % 2) == 0)
       {
-        vistorTeamLeds[i] = CRGB::Black;
+        visitingTeamLeds[i] = CRGB::Black;
       } else {
-        vistorTeamLeds[i] = CRGB::Red;
+        visitingTeamLeds[i] = CRGB::Red;
       }
     }
 
@@ -393,9 +438,9 @@ void homeTeamScoredLights() {
     for (int i = 0; i < NUM_LED_VISITING_TEAM; i++) {
       if ( (i % 2) == 0)
       {
-        vistorTeamLeds[i] = CRGB::Red;
+        visitingTeamLeds[i] = CRGB::Red;
       } else {
-        vistorTeamLeds[i] = CRGB::Black;
+        visitingTeamLeds[i] = CRGB::Black;
       }
     }
 
@@ -409,16 +454,26 @@ void homeTeamScoredLights() {
   clearAllPixels();
 }
 
+// ***********************************************************************************************************************************************
+//
+// Clear all LEDs function (supporting function)
+//
+// ***********************************************************************************************************************************************
 void clearAllPixels() {
   for (int i = 0; i < NUM_LEDS_HOME_TEAM; i++) {
     homeTeamLeds[i] = CRGB::Black;
   }
   for (int i = 0; i < NUM_LED_VISITING_TEAM; i++) {
-    vistorTeamLeds[i] = CRGB::Black;
+    visitingTeamLeds[i] = CRGB::Black;
   }
   FastLED.show();
 }
 
+// ***********************************************************************************************************************************************
+// 
+// Visiting team score LED lightshow function
+//
+// ***********************************************************************************************************************************************
 void visitingTeamScoredLights() {
   // simple celebration LED show
   // set the odd leds to off on the visiting team and even off on the home team
@@ -438,9 +493,9 @@ void visitingTeamScoredLights() {
     for (int i = 0; i < NUM_LED_VISITING_TEAM; i++) {
       if ( (i % 2) == 0)
       {
-        vistorTeamLeds[i] = CRGB::Black;
+        visitingTeamLeds[i] = CRGB::Black;
       } else {
-        vistorTeamLeds[i] = CRGB::White;
+        visitingTeamLeds[i] = CRGB::White;
       }
     }
 
@@ -459,9 +514,9 @@ void visitingTeamScoredLights() {
     for (int i = 0; i < NUM_LED_VISITING_TEAM; i++) {
       if ( (i % 2) == 0)
       {
-        vistorTeamLeds[i] = CRGB::White;
+        visitingTeamLeds[i] = CRGB::White;
       } else {
-        vistorTeamLeds[i] = CRGB::Black;
+        visitingTeamLeds[i] = CRGB::Black;
       }
     }
 
@@ -475,13 +530,18 @@ void visitingTeamScoredLights() {
   clearAllPixels();
 }
 
+// ***********************************************************************************************************************************************
+//
+// Twinkle Random Color LEDs Function
+//
+// ***********************************************************************************************************************************************
 void ColorTwinkleLEDs() {
     homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
-    vistorTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
+    visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
 
     if(random(35) > 25){
       homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB::Black;
-      vistorTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
+      visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
     }
     FastLED.show();
 }
