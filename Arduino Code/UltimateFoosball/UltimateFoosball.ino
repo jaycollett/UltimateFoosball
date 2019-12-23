@@ -44,7 +44,7 @@
 #define   BORED_CROWD_MILLIS      45000 // 45 seconds must lapse before we play a bored crowd sound clip
 #define   ISR_WAIT_TIME           1000  // time in ms that must elapse before processing any interrtupt again
 #define   TWK_LED_DELAY           200   // time between calls to the twinkle led function in the loop event
-#define   DEBUG
+//#define   DEBUG
 
 
 // Setup our debug printing
@@ -178,6 +178,11 @@ void loop() {
 
   // check to see if we need to process a new goal/score
   if (processAGoal) {
+    // stop playing any sounds that may be playing
+    // before playing the goal/score sounds
+    if (!musicPlayer.stopped()) {
+      musicPlayer.stopPlaying();
+    }
     // check to see if we need to process a home team score
     if (lastTeamScored == 'H' && homeTeamHot) {
       // home team scored and is on fire!
@@ -536,9 +541,12 @@ void visitingTeamScoredLights() {
 //
 // ***********************************************************************************************************************************************
 void ColorTwinkleLEDs() {
+  for(int i = 0; i <= 5; i++){
     homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
     visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
-
+    FastLED.show();
+    delay(10);
+  }
     if(random(35) > 25){
       homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB::Black;
       visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
