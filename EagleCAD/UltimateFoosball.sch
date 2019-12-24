@@ -13819,6 +13819,7 @@ part number 2062-2P from STA</description>
 <sheets>
 <sheet>
 <plain>
+<text x="172.72" y="27.94" size="3.81" layer="94">www.jaycollett.com</text>
 </plain>
 <instances>
 <instance part="FRAME1" gate="G$1" x="0" y="0" smashed="yes"/>
@@ -13913,21 +13914,21 @@ part number 2062-2P from STA</description>
 <attribute name="VALUE" x="203.2" y="43.434" size="1.778" layer="96" font="vector"/>
 <attribute name="NAME" x="203.2" y="56.388" size="1.778" layer="95" font="vector"/>
 </instance>
-<instance part="H1" gate="G$1" x="134.62" y="33.02" smashed="yes">
-<attribute name="NAME" x="136.652" y="33.6042" size="1.778" layer="95"/>
-<attribute name="VALUE" x="136.652" y="30.5562" size="1.778" layer="96"/>
+<instance part="H1" gate="G$1" x="104.14" y="17.78" smashed="yes">
+<attribute name="NAME" x="106.172" y="18.3642" size="1.778" layer="95"/>
+<attribute name="VALUE" x="106.172" y="15.3162" size="1.778" layer="96"/>
 </instance>
-<instance part="H2" gate="G$1" x="134.62" y="25.4" smashed="yes">
-<attribute name="NAME" x="136.652" y="25.9842" size="1.778" layer="95"/>
-<attribute name="VALUE" x="136.652" y="22.9362" size="1.778" layer="96"/>
+<instance part="H2" gate="G$1" x="104.14" y="10.16" smashed="yes">
+<attribute name="NAME" x="106.172" y="10.7442" size="1.778" layer="95"/>
+<attribute name="VALUE" x="106.172" y="7.6962" size="1.778" layer="96"/>
 </instance>
-<instance part="H3" gate="G$1" x="121.92" y="33.02" smashed="yes">
-<attribute name="NAME" x="123.952" y="33.6042" size="1.778" layer="95"/>
-<attribute name="VALUE" x="123.952" y="30.5562" size="1.778" layer="96"/>
+<instance part="H3" gate="G$1" x="104.14" y="33.02" smashed="yes">
+<attribute name="NAME" x="106.172" y="33.6042" size="1.778" layer="95"/>
+<attribute name="VALUE" x="106.172" y="30.5562" size="1.778" layer="96"/>
 </instance>
-<instance part="H4" gate="G$1" x="121.92" y="25.4" smashed="yes">
-<attribute name="NAME" x="123.952" y="25.9842" size="1.778" layer="95"/>
-<attribute name="VALUE" x="123.952" y="22.9362" size="1.778" layer="96"/>
+<instance part="H4" gate="G$1" x="104.14" y="25.4" smashed="yes">
+<attribute name="NAME" x="106.172" y="25.9842" size="1.778" layer="95"/>
+<attribute name="VALUE" x="106.172" y="22.9362" size="1.778" layer="96"/>
 </instance>
 </instances>
 <busses>

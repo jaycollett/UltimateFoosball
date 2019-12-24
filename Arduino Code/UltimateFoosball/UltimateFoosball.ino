@@ -44,7 +44,7 @@
 #define   BORED_CROWD_MILLIS      45000 // 45 seconds must lapse before we play a bored crowd sound clip
 #define   ISR_WAIT_TIME           1000  // time in ms that must elapse before processing any interrtupt again
 #define   TWK_LED_DELAY           200   // time between calls to the twinkle led function in the loop event
-//#define   DEBUG
+//#define   DEBUG                       // define this value to allow serial prints for debugging
 
 
 // Setup our debug printing
@@ -75,7 +75,7 @@ volatile unsigned int homeTeamScore;
 volatile unsigned int visitingTeamScore;
 volatile char lastTeamScored;
 volatile unsigned int lastScoreTime;
-enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, CrowdIsBored, SystemStart, SystemReset };
+enum TrackType { HomeTeamScore, VisitorTeamScore, HomeTeamHOT, VisitorTeamHOT, CrowdIsBored, SystemStart, SystemReset, HomeTeamWins, VisitorTeamWins };
 unsigned int tempAnalogReadForRandom;
 unsigned int lastTimeBoredCrowdWasPlayed;
 volatile bool homeTeamHot = false;
@@ -84,6 +84,7 @@ volatile bool gameResetRequested = false;
 volatile bool processAGoal = false;
 volatile unsigned int lastRSTTriggerTime = 0;
 unsigned int lastTwinkleLEDUpdate = 0;
+volatile bool gameOver = false;
 
 // EVENTS to be coded for
 //
@@ -103,22 +104,41 @@ void setup() {
   // init serial output
   Serial.begin(9600);
 
+  // disable Wifi (to save some juice)
+  digitalWrite(WINC_EN, LOW);
+
   // set up the scoreboard display (7 segment led)
   scoreDisplay.begin(0x70);
+  delay(50);
+  scoreDisplay.writeDigitNum(0, 0);
+  scoreDisplay.writeDigitNum(1, 0);
+  scoreDisplay.drawColon(false);
+  scoreDisplay.writeDigitNum(2, 0);
+  scoreDisplay.writeDigitNum(3, 0);
+  scoreDisplay.writeDisplay();
 
   if (! musicPlayer.begin()) { // initialise the music player
     debugln(F("Couldn't find VS1053, do you have the right pins defined?"));
+    scoreDisplay.writeDigitNum(0, 1);
+    scoreDisplay.writeDigitNum(1, 1);
+    scoreDisplay.drawColon(false);
+    scoreDisplay.writeDigitNum(2, 1);
+    scoreDisplay.writeDigitNum(3, 1);
+    scoreDisplay.writeDisplay();
     while (1);
   }
 
   debugln(F("VS1053 found"));
   delay(250);
 
-  musicPlayer.sineTest(0x44, 500);    // Make a tone to indicate VS1053 is working
-  delay(250);
-
   if (!SD.begin(CARDCS)) {
     debugln(F("SD failed, or not present"));
+    scoreDisplay.writeDigitNum(0, 2);
+    scoreDisplay.writeDigitNum(1, 2);
+    scoreDisplay.drawColon(false);
+    scoreDisplay.writeDigitNum(3, 2);
+    scoreDisplay.writeDigitNum(4, 2);
+    scoreDisplay.writeDisplay();
     while (1);  // don't do anything more
   }
   debugln("SD OK!");
@@ -143,9 +163,6 @@ void setup() {
 
   // attach an interrupt for the reset button
   attachInterrupt (digitalPinToInterrupt (GAME_RESET_BUTTON), gameResetTriggered, LOW);
-
-  // disable Wifi (to save some juice)
-  digitalWrite(WINC_EN, LOW);
 
   // set default for global variables
   homeTeamScore = 0;
@@ -178,13 +195,25 @@ void loop() {
 
   // check to see if we need to process a new goal/score
   if (processAGoal) {
+
+    // update the scoreboard (HOME | VISITOR)
+    updateScoreBoard();
+
     // stop playing any sounds that may be playing
     // before playing the goal/score sounds
     if (!musicPlayer.stopped()) {
       musicPlayer.stopPlaying();
     }
-    // check to see if we need to process a home team score
-    if (lastTeamScored == 'H' && homeTeamHot) {
+    // check to see if we need to process a score
+    if (gameOver) {
+      if (lastTeamScored == 'H') {
+        playAudioTrack(HomeTeamWins);
+        homeTeamScoredLights();
+      } else {
+        playAudioTrack(VisitorTeamWins);
+        visitingTeamScoredLights();
+      }
+    } else if (lastTeamScored == 'H' && homeTeamHot) {
       // home team scored and is on fire!
       playAudioTrack(HomeTeamHOT);
       homeTeamScoredLights();
@@ -209,14 +238,11 @@ void loop() {
     playAudioTrack(SystemReset);
   }
 
-  // update the scoreboard (HOME | VISITOR)
-  updateScoreBoard();
-
   // update the random seed
   tempAnalogReadForRandom = analogRead(A0);
   randomSeed(tempAnalogReadForRandom);
 
-  if(( millis() - lastTwinkleLEDUpdate) >= TWK_LED_DELAY){
+  if (( millis() - lastTwinkleLEDUpdate) >= TWK_LED_DELAY) {
     ColorTwinkleLEDs();
     lastTwinkleLEDUpdate = millis();
   }
@@ -238,20 +264,27 @@ void homeScoreTriggered() {
   // poor mans software debounce for ISR
   if ( (thisScoreTime - lastScoreTime) > ISR_WAIT_TIME) {
 
-    // increment the score counter and play the sound for this team
-    homeTeamScore++;
+    if (!gameOver) {
+      // increment the score counter and play the sound for this team
+      homeTeamScore++;
 
-    // check to see if this event qualifies for a HOT team score
-    // which means that the team scored more than once in HOT_TEAM_MILLISECS  seconds
-    if ( (lastTeamScored == 'H') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
-      homeTeamHot = true;
-    } else {
-      // play regular score sounds
-      homeTeamHot = false;
+      // check to see if this is the game ending score
+      if (homeTeamScore == 5) {
+        gameOver = true;
+      }
+
+      // check to see if this event qualifies for a HOT team score
+      // which means that the team scored more than once in HOT_TEAM_MILLISECS  seconds
+      if ( (lastTeamScored == 'H') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
+        homeTeamHot = true;
+      } else {
+        // play regular score sounds
+        homeTeamHot = false;
+      }
+      lastTeamScored = 'H';
+      lastScoreTime = thisScoreTime;
+      processAGoal = true;
     }
-    lastTeamScored = 'H';
-    lastScoreTime = thisScoreTime;
-    processAGoal = true;
   }
 }
 
@@ -267,18 +300,26 @@ void visitorScoreTriggered() {
   unsigned int thisScoreTime = millis();
 
   if ( (thisScoreTime - lastScoreTime) > ISR_WAIT_TIME) {
-    // increment the score counter and play the sound for this team
-    visitingTeamScore++;
 
-    if ( (lastTeamScored == 'V') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
-      visitingTeamHot = true;
-    } else {
-      visitingTeamHot = false;
+    if (!gameOver) {
+      // increment the score counter and play the sound for this team
+      visitingTeamScore++;
+
+      // check to see if this is the game ending score
+      if (visitingTeamScore == 5) {
+        gameOver = true;
+      }
+
+      if ( (lastTeamScored == 'V') && ((thisScoreTime - lastScoreTime) <= HOT_TEAM_MILLISECS) ) {
+        visitingTeamHot = true;
+      } else {
+        visitingTeamHot = false;
+      }
+
+      lastTeamScored = 'V';
+      lastScoreTime = thisScoreTime;
+      processAGoal = true;
     }
-
-    lastTeamScored = 'V';
-    lastScoreTime = thisScoreTime;
-    processAGoal = true;
   }
 }
 
@@ -300,6 +341,7 @@ void gameResetTriggered() {
     gameResetRequested = true;
     processAGoal = false;
     lastRSTTriggerTime = millis();
+    gameOver = false;
   }
 }
 
@@ -350,6 +392,13 @@ void playAudioTrack(TrackType trackType) {
       playRandomFileIn(SD.open("/sysrst"));
       break;
 
+    case VisitorTeamWins:
+      playRandomFileIn(SD.open("/homewin"));
+      break;
+
+    case HomeTeamWins:
+      playRandomFileIn(SD.open("/visitwin"));
+      break;
   }
 
 }
@@ -475,7 +524,7 @@ void clearAllPixels() {
 }
 
 // ***********************************************************************************************************************************************
-// 
+//
 // Visiting team score LED lightshow function
 //
 // ***********************************************************************************************************************************************
@@ -541,15 +590,15 @@ void visitingTeamScoredLights() {
 //
 // ***********************************************************************************************************************************************
 void ColorTwinkleLEDs() {
-  for(int i = 0; i <= 5; i++){
+  for (int i = 0; i <= 5; i++) {
     homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
     visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB( random(0, 255), random(0, 255), random(0, 255) );
     FastLED.show();
     delay(10);
   }
-    if(random(35) > 25){
-      homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB::Black;
-      visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
-    }
-    FastLED.show();
+  if (random(35) > 25) {
+    homeTeamLeds[random(NUM_LEDS_HOME_TEAM)] = CRGB::Black;
+    visitingTeamLeds[random(NUM_LED_VISITING_TEAM)] = CRGB::Black;
+  }
+  FastLED.show();
 }
