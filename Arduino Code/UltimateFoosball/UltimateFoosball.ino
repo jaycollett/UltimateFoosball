@@ -342,6 +342,8 @@ void gameResetTriggered() {
     processAGoal = false;
     lastRSTTriggerTime = millis();
     gameOver = false;
+    // update the scoreboard (HOME | VISITOR)
+    updateScoreBoard();
   }
 }
 
@@ -458,7 +460,7 @@ void homeTeamScoredLights() {
   // then set the even leds to red on the home team and the odd leds red on the visiting team
   // then repeat a few times
   int t = 0;
-  while (t < 16) {
+  while (t < 12) {
     for (int i = 0; i < NUM_LEDS_HOME_TEAM; i++) {
       if ( (i % 2) == 0)
       {
@@ -534,7 +536,7 @@ void visitingTeamScoredLights() {
   // then set the even leds to white on the visiting team and the odd leds white on the visiting team
   // then repeat a few times
   int t = 0;
-  while (t < 16) {
+  while (t < 12) {
     for (int i = 0; i < NUM_LEDS_HOME_TEAM; i++) {
       if ( (i % 2) == 0)
       {
