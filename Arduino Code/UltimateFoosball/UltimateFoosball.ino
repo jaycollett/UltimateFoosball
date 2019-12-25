@@ -395,11 +395,11 @@ void playAudioTrack(TrackType trackType) {
       break;
 
     case VisitorTeamWins:
-      playRandomFileIn(SD.open("/homewin"));
+      playRandomFileIn(SD.open("/visitwin"));
       break;
 
     case HomeTeamWins:
-      playRandomFileIn(SD.open("/visitwin"));
+      playRandomFileIn(SD.open("/homewin"));
       break;
   }
 
