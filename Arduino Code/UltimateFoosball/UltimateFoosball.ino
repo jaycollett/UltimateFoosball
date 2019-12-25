@@ -1,6 +1,6 @@
 // *******************************************************************************
 //
-// Ultimate Foosball Table Firmware v1.0 (12/9/2019)
+// Ultimate Foosball Table Firmware v1.4 (12/24/2019)
 //
 // Firmware to power the customizations done for my son's foosball table.
 //
