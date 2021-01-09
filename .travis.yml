@@ -10,7 +10,8 @@ install:
 - platformio lib -g install 1
 
 env:
-- BOARD=esp12e
+- platform = atmelsam
+- board = adafruit_feather_m0
 
 script:
   - "echo $PWD"
@@ -18,7 +19,7 @@ script:
   - pio lib install https://github.com/jaycollett/UltimateFoosball.git
   - pio lib install "PubSubClient"
   - pio lib install "FastLED"
-  - pio lib install "Adafruit VS1053 Library"
+  - pio lib install "adafruit/Adafruit VS1053 Library@^1.2.0
   - pio lib install "Adafruit_LEDBackpack"
   - pio lib install "SD"
   - platformio ci --board=$BOARD --lib=$PWD/ArduinoCode $PWD/ArduinoCode/UltimateFoosball/UltimateFoosball.ino
