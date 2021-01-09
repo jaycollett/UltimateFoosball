@@ -10,7 +10,6 @@ install:
 - platformio lib -g install 1
 
 env:
-- PLATFORM=atmelsam
 - BOARD=adafruit_feather_m0
 
 script:
