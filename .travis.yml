@@ -10,8 +10,8 @@ install:
 - platformio lib -g install 1
 
 env:
-- platform = atmelsam
-- board = adafruit_feather_m0
+- PLATFORM = atmelsam
+- BOARD = adafruit_feather_m0
 
 script:
   - "echo $PWD"
