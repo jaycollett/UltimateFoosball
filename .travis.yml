@@ -22,6 +22,7 @@ script:
   - pio lib install "adafruit/Adafruit VS1053 Library@^1.2.0"
   - pio lib install "Adafruit_LEDBackpack"
   - pio lib install "SD"
+  - pio lib install "adafruit/Adafruit GFX Library@^1.10.4"
   - platformio ci --board=$BOARD --lib=$PWD/ArduinoCode $PWD/ArduinoCode/UltimateFoosball/UltimateFoosball.ino
   
 notifications:
