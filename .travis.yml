@@ -11,6 +11,7 @@ install:
 
 env:
 - BOARD=adafruit_feather_m0
+- framework=arduino
 
 script:
   - "echo $PWD"
