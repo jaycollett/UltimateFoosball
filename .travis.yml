@@ -17,10 +17,10 @@ script:
   - "echo $PWD"
   - "echo $HOME"
   - pio lib install https://github.com/jaycollett/UltimateFoosball.git
-  - pio lib install "PubSubClient"
-  - pio lib install "FastLED"
+  - pio lib install "knolleary/PubSubClient@^2.8"
+  - pio lib install "fastled/FastLED@^3.4.0"
   - pio lib install "adafruit/Adafruit VS1053 Library@^1.2.0"
-  - pio lib install "Adafruit_LEDBackpack"
+  - pio lib install "adafruit/Adafruit LED Backpack Library @ ^1.1.8"
   - pio lib install "SD"
   - pio lib install "adafruit/Adafruit GFX Library@^1.10.4"
   - platformio ci --board=$BOARD --lib=$PWD/ArduinoCode $PWD/ArduinoCode/UltimateFoosball/UltimateFoosball.ino
