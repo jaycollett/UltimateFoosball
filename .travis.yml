@@ -18,7 +18,7 @@ script:
   - pio lib install https://github.com/jaycollett/UltimateFoosball.git
   - pio lib install "PubSubClient"
   - pio lib install "FastLED"
-  - pio lib install "Adafruit_VS1053"
+  - pio lib install "Adafruit VS1053"
   - pio lib install "Adafruit_LEDBackpack"
   - pio lib install "SD"
   - pio lib install "SPI"
